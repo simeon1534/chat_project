@@ -2,14 +2,35 @@ import socket
 import threading
 from cryptography.fernet import Fernet
 
+
+def get_ip_address():
+    # Create a socket object using the AF_INET address family (IPv4) and SOCK_DGRAM socket type.
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    try:
+        # Doesn't really send data, just connects to the specified address and port.
+        s.connect(("8.8.8.8", 80))
+        ip_address = s.getsockname()[0]  # Retrieve the local IP address.
+    except socket.error:
+        ip_address = "Unable to get IP address"
+    finally:
+        s.close()  # Close the socket.
+
+    return ip_address
+
+
+
+
+
 HEADER = 64
 PORT = 5050
-SERVER = "192.168.1.6"
+SERVER = str(get_ip_address())
 ADDR = (SERVER, PORT)
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind(ADDR)
 
 clients_server = []
@@ -43,11 +64,13 @@ def handle_client(conn, addr):
         msg_length = conn.recv(HEADER)
         if msg_length:
             msg_length = int(msg_length)
-            encrypted_msg = conn.recv(msg_length) # msg_length
+            encrypted_msg = conn.recv(msg_length)
             msg = cipher_suite.decrypt(encrypted_msg).decode(FORMAT)
-            if msg.split(': ')[1] == DISCONNECT_MESSAGE: # simeon: zdr
+            if msg.split(': ')[1] == DISCONNECT_MESSAGE:
                 connected = False
                 broadcast(conn, addr, f"{msg.split(': ')[0]} disconnected!")
+
+
             else:
                 broadcast(conn, addr, msg)
             print(f"{addr} {msg}")
