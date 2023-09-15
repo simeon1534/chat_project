@@ -5,3 +5,6 @@ gui_client.spec
 new_server.py
 testclient.py
 testserver.py
+dist
+build
+venv
